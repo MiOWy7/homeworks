@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Универсальный конструктор визиток</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --card-bg: #1A1A40;
+      --card-accent: #76D2F7;
+      --card-text: #fff;
+      --card-border: #e6e6f0;
+      --card-radius: 17px;
+    }
+    body {
+      background: #f2f4f8;
+      font-family: 'Montserrat', Arial, sans-serif;
+      margin: 0; min-height: 100vh;
+    }
+    .wrapper {
+      max-width: 510px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.10);
+      padding: 32px 22px 22px 22px;
+    }
+    h1 { text-align: center; color: #1a1a40; font-size: 2.10rem; margin-bottom: 23px; }
+    form { display: flex; flex-direction: column; gap: 15px; }
+    .label-block { display: flex; flex-direction: column; gap: 5px; }
+    label { font-size: 1rem; color: #1a1a40; font-weight: 500; }
+    input[type="text"], input[type="email"], input[type="tel"] {
+      width: 100%; padding: 8px 12px; border: 1px solid #dde2ee;
+      border-radius: 6px; font-size: 1rem; background: #fafbfc; transition: border 0.2s;
+    }
+    input:focus { border-color: #76d2f7; outline: none; }
+    fieldset {
+      border: 1px solid #ececec; border-radius: 10px;
+      padding: 14px 16px 13px 16px; margin: 0;
+    }
+    legend { color: #525285; font-size: 1.06rem; }
+    .color-row, .flex-row {
+      display: flex; gap: 16px; flex-wrap: wrap; align-items: center; margin-top: 7px;
+    }
+    .color-row label, .flex-row label {
+      min-width: 96px; font-size: 0.97rem; color: #12123a; font-weight: 500; display: flex; align-items: center; gap: 4px;
+    }
+    input[type="color"] { width: 38px; height: 28px; border: none; background: none; padding: 0; cursor: pointer; }
+    input[type=range] { width: 100px; }
+    .switcher { display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+    .switcher input { width: 20px; height: 20px; }
+    button[type=submit] {
+      background: #1a1a40; color: #fff; border: none; border-radius: 8px; padding: 13px;
+      font-size: 1.14rem; font-weight: 600; cursor: pointer;
+      margin-top: 10px; letter-spacing: 0.5px; transition: background 0.18s;
+    }
+    button:active { background: #23235a; }
+    .result { margin-top: 35px; display: flex; justify-content: center; align-items: center; }
+    .card {
+      min-width: 300px; width: 365px; border-radius: var(--card-radius);
+      background: var(--card-bg); color: var(--card-text);
+      padding: 31px 26px 27px 26px; position: relative;
+      box-shadow: 0 4px 17px rgba(0,0,0,0.10); border: 2px solid var(--card-border);
+      transition: background .25s, color .25s, border .18s, border-radius .22s;
+    }
+    .card__name { font-size: 27px; font-weight: 700; margin-bottom: 9px; transition: color .22s; }
+    .card__job { color: var(--card-accent); font-size: 18px; font-weight: 500; margin-bottom: 16px; transition: color 0.22s;}
+    .card__company { font-size: 15.6px; margin-bottom: 14px; letter-spacing: 0.7px; transition: color .16s;}
+    .card__contacts span { display: block; font-size: 15.5px; margin-bottom: 3px; word-break: break-word; transition: color .16s;}
+    @media(max-width: 430px) {
+      .wrapper { padding: 9px 1vw 12px 1vw; }
+      .card { padding: 17px 5px; width:100%; min-width:unset; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <h1>Универсальный конструктор визиток</h1>
+    <form id="bizForm" autocomplete="off">
+      <div class="label-block">
+        <label for="name">Имя и фамилия</label>
+        <input type="text" id="name" name="name" required autocomplete="off">
+      </div>
+      <div class="label-block">
+        <label for="job">Должность</label>
+        <input type="text" id="job" name="job" required autocomplete="off">
+      </div>
+      <div class="label-block">
+        <label for="company">Компания</label>
+        <input type="text" id="company" name="company" required autocomplete="off">
+      </div>
+      <div class="label-block">
+        <label for="phone">Телефон</label>
+        <input type="tel" id="phone" name="phone" required autocomplete="off">
+      </div>
+      <div class="label-block">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required autocomplete="off">
+      </div>
+      <fieldset>
+        <legend>Настройка внешнего вида</legend>
+        <div class="flex-row">
+          <div class="switcher">
+            <label>Тёмная тема
+              <input type="checkbox" id="darkTheme" checked>
+            </label>
+          </div>
+          <label>
+            Скругления:
+            <input type="range" id="radius" min="0" max="40" value="17">
+          </label>
+        </div>
+        <div class="color-row">
+          <label>Фон:
+            <input type="color" id="bgColor" value="#1A1A40">
+          </label>
+          <label>Акцент (должность):
+            <input type="color" id="accentColor" value="#76D2F7">
+          </label>
+          <label>Текст:
+            <input type="color" id="textColor" value="#FFFFFF">
+          </label>
+          <label>Рамка:
+            <input type="color" id="borderColor" value="#e6e6f0">
+          </label>
+        </div>
+      </fieldset>
+      <button type="submit">Применить</button>
+    </form>
+    <div class="result" id="result"></div>
+  </div>
+  <script>
+    function applyCardStyles(options={}) {
+      document.documentElement.style.setProperty('--card-bg', options.bgColor || '#1A1A40');
+      document.documentElement.style.setProperty('--card-accent', options.accentColor || '#76D2F7');
+      document.documentElement.style.setProperty('--card-text', options.textColor || '#fff');
+      document.documentElement.style.setProperty('--card-border', options.borderColor || '#e6e6f0');
+      document.documentElement.style.setProperty('--card-radius', (options.radius ? options.radius + 'px' : '17px'));
+    }
+    // Быстрое переключение тем
+    function setTheme(isDark) {
+      if(isDark) {
+        document.getElementById('bgColor').value = '#1A1A40';
+        document.getElementById('accentColor').value = '#76D2F7';
+        document.getElementById('textColor').value = '#FFFFFF';
+        document.getElementById('borderColor').value = '#e6e6f0';
+      } else {
+        document.getElementById('bgColor').value = '#FAFBFC';
+        document.getElementById('accentColor').value = '#3280ea';
+        document.getElementById('textColor').value = '#191A42';
+        document.getElementById('borderColor').value = '#bfc7d0';
+      }
+    }
+    document.getElementById('darkTheme').addEventListener('change', function() {
+      setTheme(this.checked);
+    });
+    document.getElementById('bizForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const job = document.getElementById('job').value.trim();
+      const company = document.getElementById('company').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const bgColor = document.getElementById('bgColor').value;
+      const accentColor = document.getElementById('accentColor').value;
+      const textColor = document.getElementById('textColor').value;
+      const borderColor = document.getElementById('borderColor').value;
+      const radius = document.getElementById('radius').value;
+      applyCardStyles({bgColor,accentColor,textColor,borderColor,radius});
+      const card = `
+        <div class="card">
+          <div class="card__name">${name}</div>
+          <div class="card__job">${job}</div>
+          <div class="card__company">${company}</div>
+          <div class="card__contacts">
+            <span>📞 ${phone}</span>
+            <span>✉️ ${email}</span>
+          </div>
+        </div>`;
+      document.getElementById('result').innerHTML = card;
+    });
+  </script>
+</body>
+</html>
