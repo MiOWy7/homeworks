@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Таблица умножения</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; }
+    table { border-collapse: collapse; margin: 40px auto; background: #fff; border-radius: 10px; overflow: hidden;}
+    th, td { border: 1px solid #c0c7d1; width: 38px; height: 38px; text-align: center; }
+    th { background: #2250a1; color: #fff; }
+    caption { margin-bottom: 15px; font-size: 1.2em; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <table>
+    <caption>Таблица умножения (1–10)</caption>
+    <thead>
+      <tr>
+        <th>&times;</th>
+        <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+  <script>
+    let body = '';
+    for(let i = 1; i <= 10; i++) {
+      body += '<tr><th>' + i + '</th>';
+      for(let j = 1; j <= 10; j++) {
+        body += '<td>' + (i * j) + '</td>';
+      }
+      body += '</tr>';
+    }
+    document.getElementById('table-body').innerHTML = body;
+  </script>
+</body>
+</html>

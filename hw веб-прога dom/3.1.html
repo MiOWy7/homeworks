@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Календарь текущего месяца</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; }
+    .calendar { border-collapse: collapse; margin: 50px auto; font-size: 18px; background: #fff; border-radius: 10px; overflow: hidden; }
+    .calendar th, .calendar td { border: 1px solid #e0e0e0; width: 48px; height: 38px; text-align: center; }
+    .calendar th { background: #2250a1; color: #fff; }
+    .calendar td { background: #fbfbfb; }
+    .calendar td.today { background: #b2e495; font-weight: bold; color: #234e23; }
+    h1 { text-align: center; margin-top: 28px;}
+  </style>
+</head>
+<body>
+  <h1 id="header"></h1>
+  <table class="calendar">
+    <thead>
+      <tr>
+        <th>Пн</th><th>Вт</th><th>Ср</th><th>Чт</th><th>Пт</th><th>Сб</th><th>Вс</th>
+      </tr>
+    </thead>
+    <tbody id="calendar-body"></tbody>
+  </table>
+<script>
+  const months = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  document.getElementById('header').textContent = months[month] + ' ' + year;
+
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const calendarBody = document.getElementById('calendar-body');
+
+  let date = 1;
+  for (let i = 0; i < 6; i++) {
+    const row = document.createElement('tr');
+    for (let j = 1; j <= 7; j++) {
+      const cell = document.createElement('td');
+      // Пн=1, ..., Вс=7; firstDay.getDay() == 0 => Вс
+      const weekDay = firstDay.getDay() === 0 ? 7 : firstDay.getDay();
+      if ((i === 0 && j < weekDay) || date > lastDay.getDate()) {
+        cell.textContent = '';
+      } else {
+        cell.textContent = date;
+        // выделяем текущий день
+        if (date === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+          cell.classList.add('today');
+        }
+        date++;
+      }
+      row.appendChild(cell);
+    }
+    calendarBody.appendChild(row);
+    if (date > lastDay.getDate()) break;
+  }
+</script>
+</body>
+</html>
