@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Список задач (To-Do Layout)</title>
+    <style>
+        :root {
+            --bg-body: #f4f5f7;
+            --bg-white: #ffffff;
+            --primary: #3b82f6;      /* Синий */
+            --primary-hover: #2563eb;
+            --text-main: #333333;
+            --text-light: #888888;
+            --danger: #ef4444;       /* Красный для молнии */
+            --border: #e0e0e0;
+            --hover-row: #f9fafb;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* Обертка всего приложения */
+        .app-container {
+            display: flex;
+            width: 100%;
+            max-width: 1100px;
+            gap: 20px;
+            align-items: flex-start; /* Важно для sticky */
+        }
+
+        /* --- ЛЕВАЯ КОЛОНКА (СПИСОК) --- */
+        .list-section {
+            flex: 1; /* Занимает все доступное место */
+            background: var(--bg-white);
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            min-height: 400px;
+        }
+
+        .list-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .list-header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #555;
+            font-weight: 700;
+        }
+
+        .btn-add {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.2s;
+        }
+        .btn-add:hover { background: #f0f0f0; }
+
+        .task-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* Строка задачи */
+        .task-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.1s;
+        }
+
+        .task-item:hover {
+            background-color: var(--hover-row);
+        }
+
+        /* Элементы внутри строки */
+        .task-checkbox {
+            margin-right: 15px;
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+
+        .priority-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 10px;
+            fill: var(--danger);
+            display: none; /* Скрыта по умолчанию */
+        }
+        .priority-icon.visible { display: block; }
+
+        .task-title {
+            flex-grow: 1;
+            font-size: 15px;
+            color: var(--text-main);
+            margin-right: 10px;
+        }
+        
+        .task-item.completed .task-title {
+            text-decoration: line-through;
+            color: var(--text-light);
+        }
+        .task-item.completed .priority-icon {
+            fill: #ccc; /* Тусклая молния если выполнено */
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            opacity: 0.4;
+            transition: opacity 0.2s;
+        }
+        .task-item:hover .actions { opacity: 1; }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+        }
+        .icon-btn:hover { color: var(--primary); }
+        .icon-btn.delete:hover { color: var(--danger); }
+        
+        .icon-svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
+        /* --- ПРАВАЯ КОЛОНКА (КАРТОЧКА) --- */
+        .card-section {
+            width: 380px;
+            flex-shrink: 0;
+            /* Реализация требования "Карточка размещается фиксировано" */
+            position: sticky; 
+            top: 20px; 
+            
+            background: var(--bg-white);
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 20px;
+            
+            /* Скрываем пока не нажали кнопку */
+            visibility: hidden; 
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+
+        .card-section.active {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .card-header {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        .card-header h3 { margin: 0; font-size: 18px; color: #333; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Чтобы padding не ломал ширину */
+            font-size: 14px;
+        }
+        textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .priority-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #555;
+        }
+        .priority-toggle input { cursor: pointer; }
+        .small-lightning { width: 12px; fill: var(--danger); }
+
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            border-radius: 20px; /* Скругленные кнопки как на макете */
+            font-size: 14px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            font-weight: 500;
+        }
+
+        .btn-save {
+            background-color: var(--primary);
+            color: white;
+        }
+        .btn-save:hover { background-color: var(--primary-hover); }
+
+        .btn-cancel {
+            background-color: white;
+            border-color: #ccc;
+            color: #555;
+        }
+        .btn-cancel:hover { background-color: #f9f9f9; }
+
+        /* Сообщение-заглушка если нет задач */
+        .empty-state {
+            padding: 40px;
+            text-align: center;
+            color: #aaa;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- ЛЕВАЯ ПАНЕЛЬ: СПИСОК -->
+        <div class="list-section">
+            <div class="list-header">
+                <h2>Список задач</h2>
+                <button class="btn-add" id="btn-add-global">
+                    <span>+</span> Добавить
+                </button>
+            </div>
+            
+            <div id="task-list-container" class="task-list">
+                <!-- Задачи будут здесь -->
+            </div>
+        </div>
+
+        <!-- ПРАВАЯ ПАНЕЛЬ: ФОРМА (Sticky) -->
+        <div class="card-section" id="task-card">
+            <div class="card-header">
+                <h3>Карточка задачи</h3>
+            </div>
+            <form id="task-form">
+                <input type="hidden" id="task-id">
+                
+                <div class="form-group">
+                    <label>Задача</label>
+                    <input type="text" id="inp-title" class="form-control" placeholder="Название задачи..." required>
+                </div>
+
+                <div class="form-group">
+                    <label>Описание задачи</label>
+                    <textarea id="inp-desc" class="form-control" placeholder="Детали..."></textarea>
+                </div>
+
+                <label class="priority-toggle">
+                    <input type="checkbox" id="inp-priority">
+                    <span>Высокий приоритет</span>
+                    <!-- SVG молнии -->
+                    <svg viewBox="0 0 320 512" class="small-lightning"><path d="M296 160H180.6l42.6-129.8C227.2 15 215.7 0 200 0H56C44 0 33.8 8.9 32.2 20.8l-32 240C-1.7 275.2 9.5 288 24 288h118.7L96.6 482.5c-3.6 15.2 8 29.5 23.3 29.5 8.4 0 16.4-4.4 20.8-12l176-304c9.3-15.9-2.2-36-20.7-36z"/></svg>
+                </label>
+
+                <div class="form-buttons">
+                    <button type="submit" class="btn btn-save">Сохранить</button>
+                    <button type="button" class="btn btn-cancel" id="btn-cancel">Отменить</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <script>
+        /* --- ИКОНКИ SVG (Strings) --- */
+        const icons = {
+            edit: '<svg class="icon-svg" viewBox="0 0 512 512"><path d="M497.9 142.1l-46.1 46.1c-4.7 4.7-12.3 4.7-17 0l-111-111c-4.7-4.7-4.7-12.3 0-17l46.1-46.1c18.7-18.7 49.1-18.7 67.9 0l60.1 60.1c18.8 18.7 18.8 49.1 0 67.9zM284.2 99.8L21.6 362.4.4 483.9c-2.9 16.4 11.4 30.6 27.8 27.8l121.5-21.3 262.6-262.6c4.7-4.7 4.7-12.3 0-17l-111-111c-4.8-4.7-12.4-4.7-17.1 0zM124.1 339.9c-5.5-5.5-5.5-14.3 0-19.8l154-154c5.5-5.5 14.3-5.5 19.8 0s5.5 14.3 0 19.8l-154 154c-5.5 5.5-14.3 5.5-19.8 0zM88 424h48v36.3l-64.5 11.3-31.1-31.1L51.7 376H88v48z"/></svg>',
+            trash: '<svg class="icon-svg" viewBox="0 0 448 512"><path d="M432 32H312l-9.4-18.7A24 24 0 0 0 281.1 0H166.8a23.72 23.72 0 0 0-21.4 13.3L136 32H16A16 16 0 0 0 0 48v32a16 16 0 0 0 16 16h416a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16zM53.2 467a48 48 0 0 0 47.9 45h245.8a48 48 0 0 0 47.9-45L416 128H32z"/></svg>',
+            lightning: '<svg viewBox="0 0 320 512"><path d="M296 160H180.6l42.6-129.8C227.2 15 215.7 0 200 0H56C44 0 33.8 8.9 32.2 20.8l-32 240C-1.7 275.2 9.5 288 24 288h118.7L96.6 482.5c-3.6 15.2 8 29.5 23.3 29.5 8.4 0 16.4-4.4 20.8-12l176-304c9.3-15.9-2.2-36-20.7-36z"/></svg>'
+        };
+
+        /* --- ДАННЫЕ --- */
+        let tasks = [
+            { id: 1, title: 'Задача 1', description: 'Описание первой задачи', priority: true, completed: false },
+            { id: 2, title: 'Задача 2', description: 'Сделать верстку по макету', priority: true, completed: true },
+            { id: 3, title: 'Задача 4', description: '', priority: false, completed: false },
+            { id: 4, title: 'Задача 8', description: '', priority: false, completed: true },
+            { id: 5, title: 'Задача 9', description: '', priority: false, completed: true },
+            { id: 6, title: 'Задача 10', description: 'Проверка скролла', priority: true, completed: false },
+            { id: 7, title: 'Задача 11', description: 'Проверка скролла', priority: false, completed: false },
+            { id: 8, title: 'Задача 12', description: 'Проверка скролла', priority: false, completed: false },
+            { id: 9, title: 'Задача 13', description: 'Проверка скролла', priority: false, completed: false },
+            { id: 10, title: 'Задача 14', description: 'Проверка скролла', priority: false, completed: false },
+        ];
+
+        /* --- DOM ЭЛЕМЕНТЫ --- */
+        const listContainer = document.getElementById('task-list-container');
+        const cardSection = document.getElementById('task-card');
+        const form = document.getElementById('task-form');
+        
+        // Поля
+        const inpId = document.getElementById('task-id');
+        const inpTitle = document.getElementById('inp-title');
+        const inpDesc = document.getElementById('inp-desc');
+        const inpPriority = document.getElementById('inp-priority');
+
+        /* --- ФУНКЦИИ --- */
+
+        function renderList() {
+            listContainer.innerHTML = ''; // Очистка
+
+            if (tasks.length === 0) {
+                listContainer.innerHTML = '<div class="empty-state">Нет задач. Создайте новую!</div>';
+                return;
+            }
+
+            tasks.forEach(task => {
+                // Создаем строку (div)
+                const item = document.createElement('div');
+                item.className = `task-item ${task.completed ? 'completed' : ''}`;
+
+                // 1. Чекбокс выполнения
+                const check = document.createElement('input');
+                check.type = 'checkbox';
+                check.className = 'task-checkbox';
+                check.checked = task.completed;
+                check.addEventListener('change', () => toggleStatus(task.id));
+
+                // 2. Иконка приоритета (молния)
+                const prioritySpan = document.createElement('span');
+                prioritySpan.className = `priority-icon ${task.priority ? 'visible' : ''}`;
+                prioritySpan.innerHTML = icons.lightning;
+
+                // 3. Название
+                const title = document.createElement('span');
+                title.className = 'task-title';
+                title.textContent = task.title;
+
+                // 4. Блок кнопок (справа)
+                const actions = document.createElement('div');
+                actions.className = 'actions';
+
+                // Кнопка Edit
+                const btnEdit = document.createElement('button');
+                btnEdit.className = 'icon-btn';
+                btnEdit.innerHTML = icons.edit;
+                btnEdit.title = 'Редактировать';
+                btnEdit.onclick = () => openCard(task);
+
+                // Кнопка Delete
+                const btnDel = document.createElement('button');
+                btnDel.className = 'icon-btn delete';
+                btnDel.innerHTML = icons.trash;
+                btnDel.title = 'Удалить';
+                btnDel.onclick = () => deleteTask(task.id);
+
+                actions.appendChild(btnEdit);
+                actions.appendChild(btnDel);
+
+                // Сборка DOM
+                item.appendChild(check);
+                item.appendChild(prioritySpan);
+                item.appendChild(title);
+                item.appendChild(actions);
+
+                listContainer.appendChild(item);
+            });
+        }
+
+        // Открытие/Показ карточки
+        function openCard(task = null) {
+            cardSection.classList.add('active'); // Показываем панель
+
+            if (task) {
+                // Редактирование
+                inpId.value = task.id;
+                inpTitle.value = task.title;
+                inpDesc.value = task.description || '';
+                inpPriority.checked = task.priority;
+            } else {
+                // Создание
+                form.reset();
+                inpId.value = '';
+                inpPriority.checked = false;
+            }
+            
+            // Фокус на поле ввода названия для удобства
+            inpTitle.focus();
+        }
+
+        function closeCard() {
+            cardSection.classList.remove('active');
+            form.reset();
+        }
+
+        // Сохранение формы
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const id = inpId.value;
+            const newTitle = inpTitle.value.trim();
+            const newDesc = inpDesc.value.trim();
+            const isPriority = inpPriority.checked;
+
+            if (!newTitle) return;
+
+            if (id) {
+                // Редактируем старую
+                const task = tasks.find(t => t.id == id);
+                if (task) {
+                    task.title = newTitle;
+                    task.description = newDesc;
+                    task.priority = isPriority;
+                }
+            } else {
+                // Создаем новую
+                const newTask = {
+                    id: Date.now(),
+                    title: newTitle,
+                    description: newDesc,
+                    priority: isPriority,
+                    completed: false
+                };
+                tasks.push(newTask);
+            }
+
+            renderList();
+            closeCard();
+        });
+
+        function toggleStatus(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                renderList();
+            }
+        }
+
+        function deleteTask(id) {
+            if (confirm('Удалить задачу?')) {
+                tasks = tasks.filter(t => t.id !== id);
+                renderList();
+                // Если мы редактировали эту задачу, закроем форму
+                if (inpId.value == id) closeCard();
+            }
+        }
+
+        // Привязка глобальных кнопок
+        document.getElementById('btn-add-global').addEventListener('click', () => openCard(null));
+        document.getElementById('btn-cancel').addEventListener('click', closeCard);
+
+        // Инициализация
+        renderList();
+
+    </script>
+</body>
+</html>
