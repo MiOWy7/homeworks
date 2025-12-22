@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS MineSweeper</title>
+    <style>
+        :root {
+            --bg-color: #f0f2f5;
+            --cell-size: 35px;
+            --gap: 2px;
+            --cell-focus: #8f7a66;
+            --mine-color: #e74c3c;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            user-select: none;
+        }
+
+        h1 { color: #776e65; margin-bottom: 10px; }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: calc(12 * var(--cell-size) + 11 * var(--gap));
+            margin-bottom: 15px;
+            color: #776e65;
+            font-weight: bold;
+        }
+
+        button {
+            padding: 8px 16px;
+            background: #8f7a66;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover { background: #7a6652; }
+
+        #game-board {
+            display: grid;
+            grid-template-columns: repeat(12, var(--cell-size));
+            grid-template-rows: repeat(12, var(--cell-size));
+            gap: var(--gap);
+            background-color: #bbada0;
+            padding: var(--gap);
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            background-color: rgba(238, 228, 218, 0.35); /* Цвет закрытой клетки */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .cell:hover { background-color: rgba(238, 228, 218, 0.5); }
+        
+        /* Общий стиль открытой клетки */
+        .cell.open { 
+            background-color: #e0d0c5; /* Чуть светлее */
+            cursor: default; 
+        }
+
+        /* !!! Стиль для ПУСТОЙ открытой клетки (без цифр) */
+        .cell.open.empty {
+            background-color: #dcb894; /* Более темный оттенок */
+            box-shadow: inset 1px 1px 4px rgba(0,0,0,0.15); /* Эффект вдавленности */
+        }
+
+        .cell.flag::after { content: "🚩"; font-size: 16px; }
+        .cell.mine { background-color: var(--mine-color); color: white; }
+        .cell.mine::after { content: "💣"; font-size: 16px; }
+        
+        .cell.focused { box-shadow: inset 0 0 0 3px var(--cell-focus); }
+
+        .c-1 { color: #3498db; }
+        .c-2 { color: #2ecc71; }
+        .c-3 { color: #e74c3c; }
+        .c-4 { color: #9b59b6; }
+        .c-5 { color: #f1c40f; }
+        .c-6 { color: #1abc9c; }
+        .c-7 { color: #34495e; }
+        .c-8 { color: #7f8c8d; }
+
+        #status-msg { margin-top: 15px; font-size: 1.2em; height: 1.5em; }
+    </style>
+</head>
+<body>
+
+    <h1>MineSweeper</h1>
+
+    <div class="game-info">
+        <span id="mines-count">Мины: 20</span>
+        <button onclick="initGame()">Рестарт</button>
+    </div>
+
+    <div id="game-board"></div>
+    <div id="status-msg"></div>
+
+    <script>
+        const ROWS = 12;
+        const COLS = 12;
+        const MINES_COUNT = 20;
+
+        let grid = []; 
+        let isFirstMove = true; 
+        let isGameOver = false;
+        let minesLeft = MINES_COUNT;
+        
+        let cursorX = 0;
+        let cursorY = 0;
+
+        const boardElement = document.getElementById('game-board');
+        const statusElement = document.getElementById('status-msg');
+        const minesCountElement = document.getElementById('mines-count');
+
+        function initGame() {
+            grid = [];
+            isFirstMove = true;
+            isGameOver = false;
+            minesLeft = MINES_COUNT;
+            
+            statusElement.innerText = "";
+            statusElement.style.color = "#333";
+            updateMinesCounter();
+            
+            renderBoardHtml();
+            highlightCursor();
+        }
+
+        function renderBoardHtml() {
+            boardElement.innerHTML = '';
+            for (let y = 0; y < ROWS; y++) {
+                const row = [];
+                for (let x = 0; x < COLS; x++) {
+                    row.push({
+                        x, y,
+                        isMine: false,
+                        isOpen: false,
+                        isFlag: false,
+                        neighborCount: 0
+                    });
+
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.x = x;
+                    cell.dataset.y = y;
+                    
+                    cell.addEventListener('click', () => handleInteraction(x, y, 'open'));
+                    cell.addEventListener('contextmenu', (e) => {
+                        e.preventDefault(); 
+                        handleInteraction(x, y, 'flag');
+                    });
+
+                    boardElement.appendChild(cell);
+                }
+                grid.push(row);
+            }
+        }
+
+        function handleInteraction(x, y, action) {
+            if (isGameOver) return;
+
+            if (isFirstMove && action === 'open') {
+                startGame(x, y);
+            }
+
+            const cell = grid[y][x];
+
+            if (action === 'flag') {
+                if (!cell.isOpen) toggleFlag(cell);
+            } else if (action === 'open') {
+                if (!cell.isFlag && !cell.isOpen) {
+                    dispatchGameEvent('mine.step', { x, y });
+                    openCell(cell);
+                }
+            }
+            
+            checkWin();
+            updateView();
+        }
+
+        function startGame(safeX, safeY) {
+            isFirstMove = false;
+            dispatchGameEvent('mine.start');
+            placeMines(safeX, safeY);
+            calculateNeighbors();
+        }
+
+        function placeMines(safeX, safeY) {
+            let placed = 0;
+            while (placed < MINES_COUNT) {
+                const x = Math.floor(Math.random() * COLS);
+                const y = Math.floor(Math.random() * ROWS);
+
+                if (!grid[y][x].isMine && (x !== safeX || y !== safeY)) {
+                    grid[y][x].isMine = true;
+                    placed++;
+                }
+            }
+        }
+
+        function calculateNeighbors() {
+            for (let y = 0; y < ROWS; y++) {
+                for (let x = 0; x < COLS; x++) {
+                    if (grid[y][x].isMine) continue;
+                    
+                    const neighbors = getNeighbors(x, y);
+                    grid[y][x].neighborCount = neighbors.filter(n => n.isMine).length;
+                }
+            }
+        }
+
+        function getNeighbors(x, y) {
+            const res = [];
+            for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    
+                    const nx = x + dx;
+                    const ny = y + dy;
+                    
+                    if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS) {
+                        res.push(grid[ny][nx]);
+                    }
+                }
+            }
+            return res;
+        }
+
+        function openCell(cell) {
+            if (cell.isOpen || cell.isFlag) return;
+            
+            cell.isOpen = true;
+
+            if (cell.isMine) {
+                gameOver(false);
+                return;
+            }
+
+            if (cell.neighborCount === 0) {
+                getNeighbors(cell.x, cell.y).forEach(n => openCell(n));
+            }
+        }
+
+        function toggleFlag(cell) {
+            cell.isFlag = !cell.isFlag;
+            minesLeft += cell.isFlag ? -1 : 1;
+            updateMinesCounter();
+        }
+
+        function checkWin() {
+            if (isGameOver) return;
+
+            const hiddenNonMines = grid.flat().filter(c => !c.isMine && !c.isOpen).length;
+            if (hiddenNonMines === 0) {
+                gameOver(true);
+            }
+        }
+
+        function gameOver(win) {
+            isGameOver = true;
+            statusElement.innerText = win ? "Вы победили!" : "Вы проиграли!";
+            statusElement.style.color = win ? "#2ecc71" : "#e74c3c";
+
+            grid.flat().forEach(cell => {
+                if (win && cell.isMine) cell.isFlag = true;
+                if (!win && cell.isMine) cell.isOpen = true;
+            });
+
+            updateView();
+            dispatchGameEvent('mine.end', { result: win ? 'win' : 'lose' });
+        }
+
+        // !!! Обновили функцию рендера
+        function updateView() {
+            const cells = document.querySelectorAll('.cell');
+            cells.forEach(domCell => {
+                const x = parseInt(domCell.dataset.x);
+                const y = parseInt(domCell.dataset.y);
+                const cell = grid[y][x];
+
+                domCell.className = 'cell'; 
+                
+                if (x === cursorX && y === cursorY) domCell.classList.add('focused');
+
+                if (cell.isOpen) {
+                    domCell.classList.add('open');
+                    
+                    // !!! Если клетка пустая (не мина и 0 соседей), добавляем класс .empty
+                    if (!cell.isMine && cell.neighborCount === 0) {
+                        domCell.classList.add('empty');
+                    } else if (cell.isMine) {
+                        domCell.classList.add('mine');
+                    } else {
+                        // Если есть цифра
+                        domCell.innerText = cell.neighborCount;
+                        domCell.classList.add(`c-${cell.neighborCount}`);
+                    }
+                } else if (cell.isFlag) {
+                    domCell.classList.add('flag');
+                    domCell.innerText = "";
+                } else {
+                    domCell.innerText = "";
+                }
+            });
+        }
+
+        function updateMinesCounter() {
+            minesCountElement.innerText = `Мины: ${minesLeft}`;
+        }
+
+        function highlightCursor() {
+            updateView();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if(["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.code)) {
+                e.preventDefault();
+            }
+
+            if (isGameOver && e.code !== 'Space' && e.code !== 'Enter') return; 
+
+            switch(e.code) {
+                case 'ArrowUp':    if (cursorY > 0) cursorY--; break;
+                case 'ArrowDown':  if (cursorY < ROWS - 1) cursorY++; break;
+                case 'ArrowLeft':  if (cursorX > 0) cursorX--; break;
+                case 'ArrowRight': if (cursorX < COLS - 1) cursorX++; break;
+                
+                case 'Space':
+                case 'Enter':
+                    if (isGameOver) {
+                        initGame();
+                        return;
+                    }
+                    const action = e.ctrlKey ? 'flag' : 'open';
+                    handleInteraction(cursorX, cursorY, action);
+                    break;
+            }
+            highlightCursor();
+        });
+
+        function dispatchGameEvent(name, detail = {}) {
+            boardElement.dispatchEvent(new CustomEvent(name, { detail, bubbles: true }));
+        }
+
+        boardElement.addEventListener('mine.start', () => console.log('🚀 Игра началась'));
+        boardElement.addEventListener('mine.step', (e) => console.log(`Step: ${e.detail.x}, ${e.detail.y}`));
+        boardElement.addEventListener('mine.end', (e) => console.log(`Game Over: ${e.detail.result}`));
+
+        initGame();
+
+    </script>
+</body>
+</html>
